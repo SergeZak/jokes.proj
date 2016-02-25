@@ -19,6 +19,10 @@ Route::get('/home', function(){
     return view('home');
 });
 
+Route::group(['prefix' => 'api/v1'], function(){
+    Route::resource('jokes', 'JokesController');
+});
+
 // Authentication routes...
 Route::get('auth/login', 'Auth\AuthController@getLogin');
 Route::post('auth/login', 'Auth\AuthController@postLogin');
