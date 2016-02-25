@@ -17,13 +17,37 @@ class JokesController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
-    public function index()
+    public function index(Request $request)
     {
-        $jokes = Joke::with(
-            array('User'=>function($query){
-                $query->select('id','name');
-            })
-        )->select('id', 'body', 'user_id')->paginate(5);
+        $search_term = $request->input('search');
+        $limit = $request->input('limit')?$request->input('limit'):5;
+
+        if ($search_term)
+        {
+            $jokes = Joke::orderBy('id', 'DESC')->where('body', 'LIKE', "%$search_term%")->with(
+                array('User'=>function($query){
+                    $query->select('id','name');
+                })
+            )->select('id', 'body', 'user_id')->paginate($limit);
+
+            $jokes->appends(array(
+                'search' => $search_term,
+                'limit' => $limit
+            ));
+        }
+        else
+        {
+            $jokes = Joke::orderBy('id', 'DESC')->with(
+                array('User'=>function($query){
+                    $query->select('id','name');
+                })
+            )->select('id', 'body', 'user_id')->paginate($limit);
+
+            $jokes->appends(array(
+                'limit' => $limit
+            ));
+        }
+
         return Response::json($this->transformCollection($jokes), 200);
     }
 
