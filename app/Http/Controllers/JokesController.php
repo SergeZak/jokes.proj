@@ -19,10 +19,12 @@ class JokesController extends Controller
      */
     public function index()
     {
-        $jokes = Joke::all(); //Not a good idea
-        return Response::json([
-            'data' => $this->transformCollection($jokes)
-        ], 200);
+        $jokes = Joke::with(
+            array('User'=>function($query){
+                $query->select('id','name');
+            })
+        )->select('id', 'body', 'user_id')->paginate(5);
+        return Response::json($this->transformCollection($jokes), 200);
     }
 
     /**
@@ -43,7 +45,19 @@ class JokesController extends Controller
      */
     public function store(Request $request)
     {
-        //
+        if(! $request->body or ! $request->user_id){
+            return Response::json([
+                'error' => [
+                    'message' => 'Please Provide Both body and user_id'
+                ]
+            ], 422);
+        }
+        $joke = Joke::create($request->all());
+
+        return Response::json([
+            'message' => 'Joke Created Succesfully',
+            'data' => $this->transform($joke)
+        ]);
     }
 
     /**
@@ -101,7 +115,22 @@ class JokesController extends Controller
      */
     public function update(Request $request, $id)
     {
-        //
+        if(! $request->body or ! $request->user_id){
+            return Response::json([
+                'error' => [
+                    'message' => 'Please Provide Both body and user_id'
+                ]
+            ], 422);
+        }
+
+        $joke = Joke::find($id);
+        $joke->body = $request->body;
+        $joke->user_id = $request->user_id;
+        $joke->save();
+
+        return Response::json([
+            'message' => 'Joke Updated Succesfully'
+        ]);
     }
 
     /**
@@ -112,11 +141,22 @@ class JokesController extends Controller
      */
     public function destroy($id)
     {
-        //
+        Joke::destroy($id);
     }
 
     private function transformCollection($jokes){
-        return array_map([$this, 'transform'], $jokes->toArray());
+        $jokesArray = $jokes->toArray();
+        return [
+            'total' => $jokesArray['total'],
+            'per_page' => intval($jokesArray['per_page']),
+            'current_page' => $jokesArray['current_page'],
+            'last_page' => $jokesArray['last_page'],
+            'next_page_url' => $jokesArray['next_page_url'],
+            'prev_page_url' => $jokesArray['prev_page_url'],
+            'from' => $jokesArray['from'],
+            'to' =>$jokesArray['to'],
+            'data' => array_map([$this, 'transform'], $jokesArray['data'])
+        ];
     }
 
     private function transform($joke){
