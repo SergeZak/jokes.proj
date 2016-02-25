@@ -19,8 +19,12 @@ Route::get('/home', function(){
     return view('home');
 });
 
-Route::group(['prefix' => 'api/v1'], function(){
+Route::group(['prefix' => 'api/v1', 'middleware' => 'cors'], function(){
     Route::resource('jokes', 'JokesController');
+
+    Route::resource('authenticate', 'AuthenticateController', ['only' => ['index']]);
+    Route::post('authenticate', 'AuthenticateController@authenticate');
+    Route::get('authenticate/user', 'AuthenticateController@getAuthenticatedUser');
 });
 
 // Authentication routes...
